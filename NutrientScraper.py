@@ -29,10 +29,14 @@ if driver.find_element('xpath', '/html/body/iframe[1]'):
 ########################################################################################################################
 # List of foods
 foods = ['Banane','Broccoli','Ei']
-#'Rinderleber','Walnuss'
 
-# I standardize the information to 100g per food item
-quantity = '?menge=100'
+# Imported list of foods (os Module and the full path are optional)
+import os
+path = os.getcwd() + '/Multidimensional-Nutri-Score/'
+# print(os.listdir(path))
+with open (path + 'foodlistexample.txt', 'r') as file:
+    foods = file.read().split()
+
 
 # Searching process
 def searchFood(food):
@@ -47,6 +51,9 @@ def searchFood(food):
     WebDriverWait(driver,5).until(EC.presence_of_element_located((By.CLASS_NAME,'box')))
     soup = BeautifulSoup(driver.page_source,'html.parser')
     links = [l['href'] for l in soup.find_all('a',href=True) if food.lower() in l['href'].lower()]
+
+    # I standardize the information to 100g per food item
+    quantity = '?menge=100'
     if len(links) >= 1:
         # inspect the first entry
         link = startpage + links[0] + quantity
@@ -73,15 +80,15 @@ def openPage():
                 openpage.click()
             except:
                 pass
-        if scrheight == driver.execute_script('return document.body.scrollHeight'):
-            time.sleep(1)
+    if scrheight == driver.execute_script('return document.body.scrollHeight'):
+        time.sleep(1)
+        try:
+            openpage.click()
+        except:
             try:
-                openpage.click()
+                driver.find_elements(By.CLASS_NAME, 'tbl-read-more-btn').click()
             except:
-                try:
-                    driver.find_elements(By.CLASS_NAME, 'tbl-read-more-btn').click()
-                except:
-                    pass
+                pass
         # scroll down
         driver.execute_script('window.scrollTo(0,document.body.scrollHeight)')
 
@@ -90,7 +97,7 @@ def openPage():
 # name = openPage()
 
 
-# scrape the data
+# Scrape the data
 def getData(food):
     data = [['food', food]]
     header,columns = ['' for i in range(2)]
@@ -110,7 +117,6 @@ def getData(food):
 # ftable = getData(food)
 # for t in ftable:
 #     print(t)
-# print(ftable)
 
 
 # A loop to scrape the nutrients for every food in the list
