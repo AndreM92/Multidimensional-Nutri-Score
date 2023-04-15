@@ -28,7 +28,7 @@ if driver.find_element('xpath', '/html/body/iframe[1]'):
 
 ########################################################################################################################
 # List of foods
-foods = ['Banane','Broccoli','Ei']
+foods = ['Banane','Broccoli','Vollei']
 
 # Imported list of foods (os Module and the full path are optional)
 import os
@@ -52,6 +52,9 @@ def searchFood(food):
     soup = BeautifulSoup(driver.page_source,'html.parser')
     links = [l['href'] for l in soup.find_all('a',href=True) if food.lower() in l['href'].lower()]
 
+    return links
+
+def select(links):
     # I standardize the information to 100g per food item
     quantity = '?menge=100'
     if len(links) >= 1:
@@ -59,8 +62,11 @@ def searchFood(food):
         link = startpage + links[0] + quantity
         driver.get(link)
 
-# food = foods[0]
-# searchFood(food)
+# Test:
+# food = foods[2]
+# links = searchFood(food)
+# select (links)
+
 
 # Make sure that the page is completely open
 def openPage():
@@ -71,6 +77,8 @@ def openPage():
     name = driver.find_element('xpath','//*[@id="main"]/div/header/h2').text
     openpage = driver.find_element('xpath', '//a[contains(text(), "Weiterlesen")]')
     scrheight = driver.execute_script('return document.body.scrollHeight')
+    if scrheight > 10000:
+        pass
     if openpage:
         try:
             openpage.click()
@@ -94,6 +102,7 @@ def openPage():
 
     return name
 
+# Test:
 # name = openPage()
 
 
@@ -114,26 +123,51 @@ def getData(food):
 
     return data
 
-# ftable = getData(food)
+# Test:
+# ftable = getData(foods[2])
 # for t in ftable:
 #     print(t)
 
+########################################################################################################################
+# A loop function to scrape the nutrients for every food in the list
+def scrapeFoodList(foods):
+    foodDict = {}
+    header = ''
+    for food in foods:
+        foodID = foods.index(food)
+        links = searchFood(food)
+        select(links)
+        name = openPage()
+        nutrients = getData(food)
+        if header == '':
+            header = [d[0] for d in nutrients[1:]]
+        if len(foodDict) == 0:
+            foodDict = {'ID':[], 'food':[], 'entry':[]}
+            for h in header:
+                foodDict[h] = []
+        foodDict['ID'].append(foodID)
+        foodDict['food'].append(nutrients[0][1])
+        foodDict['entry'].append(name)
+        for f in foodDict:
+            if f in header:
+                col = header.index(f)
+                foodDict[f].append(nutrients[col][1])
 
-# A loop to scrape the nutrients for every food in the list
-foodDict = {}
-header = ''
+    return foodDict
 
-for food in foods:
-    foodID = foods.index(food)
-    searchFood(food)
+# To run this function
+foodDict = scrapeFoodList(foods)
+
+########################################################################################################################
+# But I rather recommend to scrape every page manually to get the specific food you are looking for and to avoid errors
+def scrapeSingleFood(foodDict, header, food):
     name = openPage()
     nutrients = getData(food)
     if header == '':
         header = [d[0] for d in nutrients[1:]]
-    if len(foodDict) == 0:
-        foodDict = {'ID':[], 'food':[], 'entry':[]}
         for h in header:
             foodDict[h] = []
+    foodID = len(foodDict['ID'])
     foodDict['ID'].append(foodID)
     foodDict['food'].append(nutrients[0][1])
     foodDict['entry'].append(name)
@@ -142,14 +176,44 @@ for food in foods:
             col = header.index(f)
             foodDict[f].append(nutrients[col][1])
 
-# print(foodDict)
+    return foodDict,header
+
+# Data setup
+foodDict = {'ID': [], 'food': [], 'entry': []}
+header = ''
+
+# Follow these steps for every food
+# 1. Search for a specific food:
+food = 'Kefir'
+links = searchFood(food)
+# 2. Click on the result you prefer
+# 3. Open the page and scrape the data
+foodDict,header = scrapeSingleFood(foodDict, header, food)
+
 # for f in foodDict:
-#     print(foodDict[f])
+#    print(foodDict[f])
+# print(foodDict)
+
+########################################################################################################################
+# When you are done with scraping
+# A quick check if the length of the rows are consistent
+def checkDictFormat():
+    lenDict = len(foodDict['ID'])
+    for index, value in enumerate(foodDict):
+        if lenDict != len(foodDict[value]):
+            print(f'{index} {value} {foodDict[value]}')
+        else:
+            return True
+
+# checkDictFormat()
 
 
 # Transform the Dictionary to a DataFrame
-df = pd.DataFrame(foodDict)
+if checkDictFormat():
+    df = pd.DataFrame(foodDict)
+
 print(df)
+
 
 ########################################################################################################################
 # Notes
