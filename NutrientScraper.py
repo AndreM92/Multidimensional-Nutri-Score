@@ -4,13 +4,16 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 import selenium.webdriver.support.expected_conditions as EC
 from selenium.common.exceptions import *
-import time
 
 import requests
 from bs4 import BeautifulSoup
 
 import numpy as np
 import pandas as pd
+
+import os
+import time
+import openpyxl
 
 
 # Defining the startpage of Nährwertrechner.de
@@ -31,7 +34,6 @@ if driver.find_element('xpath', '/html/body/iframe[1]'):
 foods = ['Banane','Broccoli','Vollei']
 
 # Imported list of foods (os Module and the full path are optional)
-import os
 path = os.getcwd() + '/Multidimensional-Nutri-Score/'
 # print(os.listdir(path))
 with open (path + 'foodlistexample.txt', 'r') as file:
@@ -50,7 +52,7 @@ def searchFood(food):
     searchbox.send_keys(Keys.ENTER)
     WebDriverWait(driver,5).until(EC.presence_of_element_located((By.CLASS_NAME,'box')))
     soup = BeautifulSoup(driver.page_source,'html.parser')
-    links = [l['href'] for l in soup.find_all('a',href=True) if food.lower() in l['href'].lower()]
+    links = [l['href'] for l in soup.find_all('a', href=True) if food.lower() in l['href'].lower()]
 
     return links
 
@@ -112,7 +114,7 @@ def getData(food):
     header,columns = ['' for i in range(2)]
     time.sleep(1)
     soup = BeautifulSoup(driver.page_source,'html.parser')
-    tables = soup.find_all('table',class_='alt nwdetails')
+    tables = soup.find_all('table', class_='alt nwdetails')
     if len(tables) >= 1:
         for t in tables:
             rows = t.find_all('tr')
@@ -170,28 +172,30 @@ def scrapeSingleFood(foodDict, header, food):
     foodID = len(foodDict['ID'])
     foodDict['ID'].append(foodID)
     foodDict['food'].append(nutrients[0][1])
-    foodDict['entry'].append(name)
+    foodDict['label'].append(name)
     for f in foodDict:
         if f in header:
-            col = header.index(f)
+            col = header.index(f) +1
             foodDict[f].append(nutrients[col][1])
 
     return foodDict,header
 
+
 # Data setup
-foodDict = {'ID': [], 'food': [], 'entry': []}
+foodDict = {'ID': [], 'food': [], 'label': []}
 header = ''
 
 # Follow these steps for every food
 # 1. Search for a specific food:
-food = 'Kefir'
+food = 'Vollei'
 links = searchFood(food)
 # 2. Click on the result you prefer
 # 3. Open the page and scrape the data
 foodDict,header = scrapeSingleFood(foodDict, header, food)
 
-# for f in foodDict:
-#    print(foodDict[f])
+for index, value in enumerate(foodDict):
+    if index < 10:
+        print(f'{index} {value} {foodDict[value]}')
 # print(foodDict)
 
 ########################################################################################################################
@@ -207,12 +211,27 @@ def checkDictFormat():
 
 # checkDictFormat()
 
-
 # Transform the Dictionary to a DataFrame
 if checkDictFormat():
-    df = pd.DataFrame(foodDict)
+    dfNutrientsTable = pd.DataFrame(foodDict)
+# print(dfNutrientsTable)
 
-print(df)
+
+# Quicksave without additional Modules
+dfNutrientsTable.to_pickle('Table.pkl')
+# Reopen
+dfNutrientsTable = pd.read_pickle('Table.pkl')
+
+
+# Export the DataFrame to Excel
+path = os.getcwd() + '/Multidimensional-Nutri-Score'
+with pd.ExcelWriter(path + '/NutrientsData.xlsx') as writer:
+    dfNutrientsTable.to_excel(writer, sheet_name='Nutrients')
+
+# Load the file
+dfNutrientsTable = pd.read_excel(path + '/NutrientsData.xlsx', sheet_name='Nutrients')
+dfNutrientsTable = dfNutrientsTable.drop(['Unnamed: 0'], axis=1)
+dfNutrientsTable.columns
 
 
 ########################################################################################################################
