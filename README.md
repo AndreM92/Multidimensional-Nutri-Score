@@ -11,3 +11,11 @@ However, this task should not be understood as a quick and easy solution. Instea
 ### Working steps:
 To achieve the project objectives, I will develop a web crawler using Python to collect nutrient information from reliable open-source web pages. My primary source will be Nährwertrechner.de because it provides detailed information on the nutrient composition of thousands of food products and is easily accessible. The scraped data will be stored in a SQL database and segmented into different tables based on the food value dimensions. From there, I will analyze the data locally and create customized evaluation criteria based on the latest research. The results will be visualized using Tableau or Power BI to provide an intuitive and user-friendly representation of the data. Additionally, I plan to publish the results on a dedicated project website in addition to my GitHub repository.
 
+### Checkmarks regarding the current status
+- [x] Create a WebCrawler for Nährwertrechner.de
+- [x] Scrape some data about nutritional information
+- [x] Store the scraped data in DataFrames and export them to Excel
+- [ ] Scrape some data about nutritional recommendations
+- [ ] Store the data in SQL
+- [ ] Clean the data
+- ...
