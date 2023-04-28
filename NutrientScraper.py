@@ -231,7 +231,10 @@ with pd.ExcelWriter(path + '/NutrientsData.xlsx') as writer:
 # Load the file
 dfNutrientsTable = pd.read_excel(path + '/NutrientsData.xlsx', sheet_name='Nutrients')
 dfNutrientsTable = dfNutrientsTable.drop(['Unnamed: 0'], axis=1)
-dfNutrientsTable.columns
+
+# Vitamin recommendations
+df_v_rec = pd.read_excel(path + '/DGE_recommendations.xlsx', sheet_name='avg_vitamins')
+print(df_v_rec[:2])
 
 
 ########################################################################################################################
@@ -278,3 +281,9 @@ df.loc[len(df)] = amount
 print(df)
 
 #df = pd.DataFrame(data,columns=header)
+
+# Vitamins
+# Columns
+for n in dfNutrientsTable.columns[15:31]:
+    e = n.split(' ')[1:]
+    print(e[0]+" ("+' '.join(e[1:])+")")
