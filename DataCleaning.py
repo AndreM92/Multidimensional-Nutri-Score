@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import openpyxl
+from sqlalchemy import create_engine
 
 import os
 path = os.getcwd() + '/Multidimensional-Nutri-Score'
@@ -30,14 +30,41 @@ for n in new_colnames:
 
 print(dfVitamins)
 
-# To see the entire results
+# To see the entire results in Excel
 with pd.ExcelWriter(path + '/CleanedData.xlsx') as writer:
     dfVitamins.to_excel(writer, sheet_name='Vitamins')
 
 
 # Vitamin recommendations
-df_v_rec = pd.read_excel(path + '/DGE_recommendations.xlsx', sheet_name='avg_vitamins')
-print(df_v_rec[:2])
+dfVitRec_full = pd.read_excel(path + '/DGE_recommendations.xlsx', sheet_name='avg_vitamins')
+dfVitRec = dfVitRec_full.iloc[:1].copy()
+dfVitRec.columns = ['Population', *dfVitRec_full.columns[1:]]
+dfVitRec['Population'] = 'average'
+print(dfVitRec)
 
-dfNutrientsTable = pd.read_pickle('Table.pkl')
-print(dfNutrientsTable)
+########################################################################################################################
+# Export to PostgreSQL
+database = 'Multidimensional-Nutri-Score'
+path2 = r'C:\Users\andre\OneDrive\Desktop\IT-Projekte\Multidimensional_Nutri-Score\\'
+with open (path2 + 'SQL_login.txt','r') as file:
+    password, username = file.read().split()
+
+# Connect to the database
+address = f'postgresql://{username}:{password}@localhost:5432/{database}'
+engine = create_engine(address)
+
+# Export the nutritional information for the vitamins
+table_name = 'nut_vitamins'
+dfVitamins.to_sql(table_name, con=engine, if_exists='replace', index=False)
+
+# Export the nutritional recommendations for the vitamins
+table_name = 'recom_vitamins'
+dfVitRec.to_sql(table_name, con=engine, if_exists='replace', index=False)
+
+
+
+#dfNutrientsTable = pd.read_pickle('Table.pkl')
+#import sqlalchemy
+#print(sqlalchemy.__version__)
+# SQL Table directory
+# C:/Users/andre/Documents/SQL

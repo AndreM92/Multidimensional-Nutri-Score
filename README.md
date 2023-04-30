@@ -15,7 +15,10 @@ To achieve the project objectives, I will develop a web crawler using Python to 
 - [x] Create a WebCrawler for Nährwertrechner.de
 - [x] Scrape some data about nutritional information
 - [x] Store the scraped data in DataFrames and export them to Excel
-- [ ] Scrape some data about nutritional recommendations
-- [ ] Store the data in SQL
-- [ ] Clean the data
-- ...
+- [x] Scrape some data about nutritional recommendations (just an average guideline)
+- [x] Store the data in SQL (just for the category Vitamins)
+- [x] Clean the data (just for the category Vitamins)
+- [ ] Calculate the percentage coverage of the requirement for each nutrient
+- [ ] Calculate the distribution of nutrient coverage
+- [ ] Repeat these steps for every category
+...
