@@ -73,3 +73,19 @@ tablenames = ['macros','vitamins','minerals','carbs','aminos','fibre','fats']
 # Notes
 dfVitamins['calc']= dfVitamins['E Tocopherole (µg)'] + dfVitamins['K (µg)']
 print(dfVitamins['calc'])
+
+
+dft = pd.DataFrame({
+    'a':[0,0,2],
+    'b':[0,1,3],
+    'c':[5,2,0]})
+
+dft.loc[dft['a'] < 0.1, 'a'] = np.nan
+dft.loc[dft['b'] < 0.1, 'b'] = np.nan
+dft['c'] = dft['c'] * 5
+
+dft['f'] = dft['a'].combine_first(dft['b']).combine_first(dft['c'])
+print(dft)
+
+dft['f'] = dft['b'].where(dft['b'] < 1, dft['c'])
+dft['a'] = dft['a'].where(dft['a'] >= 1, dft['b'])
