@@ -89,3 +89,17 @@ print(dft)
 
 dft['f'] = dft['b'].where(dft['b'] < 1, dft['c'])
 dft['a'] = dft['a'].where(dft['a'] >= 1, dft['b'])
+
+
+# Earlier calculations of vitamin percentages
+vitcol = dfVitamins.columns
+for c in vitcol:
+    dfVitP[c] = (dfVitamins[c] / dfVitRec[c].loc[0] * 100).round(2)
+dfVitP.columns = ['food'] + [n.split()[0] for n in dfVitamins.columns[1:]]
+
+# Second version, same result
+dfVit2 = dfVitamins.loc[:,['food']]
+for c in vitcol:
+    colname = c.split()[0]
+    dfVit2 = dfVit2.assign(**{colname: lambda x : round((dfVitamins[c] / dfVitRec[c].loc[0]) * 100,2)})
+print(dfVit2)
