@@ -18,22 +18,22 @@ dfEmpty = dfNutrientsTable.loc[:,['ID','food']]
 dfEmpty.set_index('ID', inplace=True)
 dfEmpty['kcal'] = dfNutrientsTable['Energie (kcal)'].str.replace(' kcal', '').str.replace(',','.').astype(float)
 
+########################################################################################################################
 # DataFrame with vitamin information
-dfVitamins = dfEmpty
+dfVitamins = dfEmpty.copy()
 dfVitamins = dfNutrientsTable.loc[:, 'Vitamin A Retinoläquivalent':'Vitamin K']
 
 # Check if the values of the vitamins are in the right units and convert them to float data types
 # Extract the digits from each value with a regular expression and just return a series of extracted values.
-vitcols = dfNutrientsTable.loc[:, 'Vitamin A Retinoläquivalent':'Vitamin K'].columns
-for c in vitcols:
+for c in dfVitamins.columns:
     dfVitamins['unit'] = [1000 if 'mg' in u else 1 for u in dfVitamins[c]]
-    dfVitamins[c] = dfVitamins[c].str.extract(r'(\d+\.?\d*)', expand=False)
+    dfVitamins[c] = dfVitamins[c].str.extract(r'(\d*\.?\d*\,?\d*)', expand=False)
     dfVitamins[c] = dfVitamins[c].str.replace('.', '', regex=True).str.replace(',', '.', regex=True).astype(float)
     dfVitamins[c] = dfVitamins[c] * dfVitamins['unit']
 dfVitamins.drop(['unit'], axis=1, inplace=True)
 
 # Shorten the column names
-dfVitamins = dfVitamins[vitcols].rename(columns=lambda c: c.replace('Vitamin ', '', 1).strip() + ' (µg)')
+dfVitamins.rename(columns=lambda c: c.replace('Vitamin ', '', 1).strip() + ' (µg)', inplace=True)
 
 # Fill in the missing nutritional contents and convert different types of vitamins
 dfVitamins['A Retinol (µg)'] = dfVitamins['A Retinol (µg)'].where(dfVitamins['A Retinol (µg)'] > 1,dfVitamins['A Retinoläquivalent (µg)'])
@@ -57,7 +57,6 @@ dfVitEnergy['grams'] = 100
 dfVitEnergy = dfVitEnergy.div(dfEmpty['kcal'], axis=0) * 100
 dfVitEnergy = pd.concat([dfEmpty[['food']],dfVitEnergy], axis=1)
 #print(dfVitEnergy)
-
 
 # Vitamin recommendations (filter the columns based on the selection of dfVitamins)
 dfVitRec_full = pd.read_excel(path + '/DGE_recommendations.xlsx', sheet_name='avg_vitamins')
@@ -102,8 +101,59 @@ VitPE_liver = dfVitPE[dfVitPE['food'] == 'Rinderleber'].reset_index()
 print(VitPV_liver.loc[0])
 print(VitPE_liver.loc[0])
 
+########################################################################################################################
+# DataFrame with mineral information (including trace minerals in µg)
+dfMinerals = dfEmpty.copy()
+dfMinerals = dfNutrientsTable.loc[:, 'Natrium':'Schwefel']
+dfTrMinerals = dfNutrientsTable.loc[:, 'Eisen':'Iodid']
 
-# To see the entire results in Excel
+# Mineral recommendations (filter the columns based on the selection of dfMinerals and dfTrMinerals)
+dfMrRec_full = pd.read_excel(path + '/DGE_recommendations.xlsx', sheet_name='avg_minerals')
+dfMrRec = dfMrRec_full.iloc[1:2].copy()
+dfTrMrRec_full = pd.read_excel(path + '/DGE_recommendations.xlsx', sheet_name='avg_trminerals')
+dfTrMrRec = dfTrMrRec_full.iloc[1:2].copy()
+
+mr_columns = dfMinerals.columns.tolist()
+dfMrRec = dfMrRec.filter(items=mr_columns)
+trmr_columns = dfTrMinerals.columns.tolist()
+dfTrMrRec = dfTrMrRec.filter(items=trmr_columns)
+#print(dfMrRec)
+#print(dfTrMrRec)
+
+# Check if the values of the minerals and trace minerals are in the right units and convert them to float data types
+# Extract the digits from each value with a regular expression and just return a series of extracted values.
+for c in mr_columns:
+    dfMinerals['unitmg'] = [1 if 'mg' in u else 0.001 for u in dfMinerals[c]]
+    dfMinerals[c] = dfMinerals[c].str.extract(r'(\d*\.?\d*\,?\d*)', expand=False)
+    dfMinerals[c] = dfMinerals[c].str.replace('.', '', regex=True).str.replace(',', '.', regex=True).astype(float)
+    dfMinerals[c] = dfMinerals[c] * dfMinerals['unitmg']
+dfMinerals.drop(['unitmg'], axis=1, inplace=True)
+
+for c in trmr_columns:
+    dfTrMinerals['unitug'] = [1000 if 'mg' in u else 1 for u in dfTrMinerals[c]]
+    dfTrMinerals[c] = dfTrMinerals[c].str.extract(r'(\d*\.?\d*\,?\d*)', expand=False)
+    dfTrMinerals[c] = dfTrMinerals[c].str.replace('.', '', regex=True).str.replace(',', '.', regex=True).astype(float)
+    dfTrMinerals[c] = dfTrMinerals[c] * dfTrMinerals['unitug']
+dfTrMinerals.drop(['unitug'], axis=1, inplace=True)
+
+# DataFrame for food with information on mineral content per 100 grams
+dfMrVol = pd.concat([dfEmpty,dfMinerals], axis=1)
+dfTrMrVol = pd.concat([dfEmpty,dfTrMinerals], axis=1)
+
+# DataFrame for food with information on mineral content per 100 kcal
+dfMrEnergy = dfMinerals.copy()
+dfMrEnergy['grams'] = 100
+dfMrEnergy = dfMrEnergy.div(dfEmpty['kcal'], axis=0) * 100
+dfMrEnergy = pd.concat([dfEmpty[['food']],dfMrEnergy], axis=1)
+dfTrMrEnergy = dfTrMinerals.copy()
+dfTrMrEnergy['grams'] = 100
+dfTrMrEnergy = dfTrMrEnergy.div(dfEmpty['kcal'], axis=0) * 100
+dfTrMrEnergy = pd.concat([dfEmpty[['food']],dfTrMrEnergy], axis=1)
+
+# Note: The bioavailability of minerals is still neglected
+
+########################################################################################################################
+# To see the results in Excel
 dfVitamins = pd.concat([dfEmpty[['food']],dfVitamins], axis=1)
 with pd.ExcelWriter(path + '/CleanedData.xlsx') as writer:
     dfVitamins.to_excel(writer, sheet_name='Vitamins')
