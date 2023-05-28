@@ -103,3 +103,8 @@ for c in vitcol:
     colname = c.split()[0]
     dfVit2 = dfVit2.assign(**{colname: lambda x : round((dfVitamins[c] / dfVitRec[c].loc[0]) * 100,2)})
 print(dfVit2)
+
+
+# df['mean'] = df.iloc[:, 0:4].mean(axis=1)
+# df['mean'] = df.iloc[:, [0,1,2,3,4].mean(axis=1)
+# df["mean_odd_year"] = df.loc[:, ["Y1961","Y1963","Y1965"]].mean(axis = 1)

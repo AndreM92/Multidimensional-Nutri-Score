@@ -13,12 +13,12 @@ path = os.getcwd() + '/Multidimensional-Nutri-Score'
 dfNutrientsTable = pd.read_excel(path + '/NutrientsData.xlsx', sheet_name='Nutrients')
 dfNutrientsTable = dfNutrientsTable.drop(['Unnamed: 0'], axis=1)
 
-# Empty DataFrame with just the ID's and names ant the calories of the foods
+# Empty DataFrame with just the ID's and names and the calories of the foods
 dfEmpty = dfNutrientsTable.loc[:,['ID','food']]
 dfEmpty.set_index('ID', inplace=True)
 dfEmpty['kcal'] = dfNutrientsTable['Energie (kcal)'].str.replace(' kcal', '').str.replace(',','.').astype(float)
 
-# DataFrame with vitamin informations
+# DataFrame with vitamin information
 dfVitamins = dfEmpty
 dfVitamins = dfNutrientsTable.loc[:, 'Vitamin A Retinoläquivalent':'Vitamin K']
 
@@ -49,14 +49,14 @@ dfVitamins = dfVitamins.drop(['B3 Niacinäquivalent (µg)'],axis=1)
 
 # DataFrame for food with information on vitamin content per 100 grams
 dfVitVolume = pd.concat([dfEmpty,dfVitamins], axis=1)
-# print(dfVitVolume)
+#print(dfVitVolume)
 
 # DataFrame for food with information on vitamin content per 100 kcal
 dfVitEnergy = dfVitamins.copy()
 dfVitEnergy['grams'] = 100
 dfVitEnergy = dfVitEnergy.div(dfEmpty['kcal'], axis=0) * 100
 dfVitEnergy = pd.concat([dfEmpty[['food']],dfVitEnergy], axis=1)
-# print(dfVitEnergy)
+#print(dfVitEnergy)
 
 
 # Vitamin recommendations (filter the columns based on the selection of dfVitamins)
@@ -64,26 +64,38 @@ dfVitRec_full = pd.read_excel(path + '/DGE_recommendations.xlsx', sheet_name='av
 dfVitRec = dfVitRec_full.iloc[:1].copy()
 selected_columns = dfVitamins.columns.tolist()
 dfVitRec = dfVitRec.filter(items=selected_columns)
-# print(dfVitRec)
+#print(dfVitRec)
 
 
 # Calculate the percentage coverage of the requirements for each nutrient (Vitamin) based on food volume (100 grams)
 dfVitPV = dfVitVolume.copy()
 dfVitPV.iloc[:, 2:] = (dfVitPV.iloc[:, 2:] / (dfVitRec.iloc[0] + 0.001) * 100).applymap(lambda x: round(x, 2))
-# print(dfVitPV)
+#print(dfVitPV)
 
 # Calculate the percentage coverage of the requirements for each nutrient (Vitamin) based on energy density (100 kcal)
 dfVitPE = dfVitEnergy.copy()
 dfVitPE.drop('grams',axis=1,inplace=True)
 dfVitPE.iloc[:, 1:] = (dfVitPE.iloc[:, 1:] / (dfVitRec.iloc[0] + 0.001) * 100).applymap(lambda x: round(x, 2))
-# print(dfVitPE)
-
+#print(dfVitPE)
 
 # Another shortening of the column names
 dfVitPV.columns = dfVitPV.columns.str.split().str[0]
 dfVitPE.columns = dfVitPE.columns.str.split().str[0]
 
+# Calculate the Score to which the need for vitamins is covered in percentage
+#dfVitPV = pd.read_excel(path + '\CleanedData.xlsx', sheet_name='VitaminCovVol').drop('Unnamed: 0', axis=1)
+#dfVitPE = pd.read_excel(path + '\CleanedData.xlsx', sheet_name='VitaminCovEnerg').drop('Unnamed: 0', axis=1)
+# For each 100 grams of the food
+dfVitPV['average'] = dfVitPV.loc[:, 'A':'K'].mean(axis=1)
+dfVitPVOrder = dfVitPV[['food', 'average']].sort_values('average', ascending=False)
+print(dfVitPVOrder)
+# For each 100 kcal of the food
+dfVitPE['average'] = dfVitPE.loc[:, 'A':'K'].mean(axis=1)
+dfVitPEOrder = dfVitPE[['food', 'average']].sort_values('average', ascending=False)
+print(dfVitPEOrder)
 
+
+# Example:
 # Inspect a single food
 VitPV_liver = dfVitPV[dfVitPE['food'] == 'Rinderleber'].reset_index()
 VitPE_liver = dfVitPE[dfVitPE['food'] == 'Rinderleber'].reset_index()
@@ -118,9 +130,7 @@ table_name = 'recom_vitamins'
 dfVitRec.to_sql(table_name, con=engine, if_exists='replace', index=False)
 
 ########################################################################################################################
-# Calculate the Score to which the need for vitamins (in 100 grams of food) is covered in percentage
-dfVitP = pd.read_excel(path + '\CleanedData.xlsx', sheet_name='VitaminCovVol')
-dfVitP['average'] = dfVitP.loc[:, 'A':'K'].mean(axis=1)
+
 
 
 
