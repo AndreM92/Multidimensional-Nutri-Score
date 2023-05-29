@@ -108,16 +108,17 @@ dfMinerals = dfNutrientsTable.loc[:, 'Natrium':'Schwefel']
 dfTrMinerals = dfNutrientsTable.loc[:, 'Eisen':'Iodid']
 
 # Mineral recommendations (filter the columns based on the selection of dfMinerals and dfTrMinerals)
+# Note: The bioavailability of minerals is still neglected
 dfMrRec_full = pd.read_excel(path + '/DGE_recommendations.xlsx', sheet_name='avg_minerals')
 dfMrRec = dfMrRec_full.iloc[1:2].copy()
 dfTrMrRec_full = pd.read_excel(path + '/DGE_recommendations.xlsx', sheet_name='avg_trminerals')
 dfTrMrRec = dfTrMrRec_full.iloc[1:2].copy()
 
 mr_columns = dfMinerals.columns.tolist()
-dfMrRec = dfMrRec.filter(items=mr_columns)
+dfMrRec = dfMrRec.filter(items=mr_columns).astype(float)
 trmr_columns = dfTrMinerals.columns.tolist()
 dfTrMrRec = dfTrMrRec.filter(items=trmr_columns)
-#print(dfMrRec)
+print(dfMrRec)
 #print(dfTrMrRec)
 
 # Check if the values of the minerals and trace minerals are in the right units and convert them to float data types
@@ -150,7 +151,39 @@ dfTrMrEnergy['grams'] = 100
 dfTrMrEnergy = dfTrMrEnergy.div(dfEmpty['kcal'], axis=0) * 100
 dfTrMrEnergy = pd.concat([dfEmpty[['food']],dfTrMrEnergy], axis=1)
 
-# Note: The bioavailability of minerals is still neglected
+# Calculate the percentage coverage of the requirements for each nutrient (mineral) based on food volume (100 grams)
+dfMrPV = dfMrVol.copy()
+dfMrPV.iloc[:, 2:] = (dfMrPV.iloc[:, 2:] / (dfMrRec.iloc[0] + 0.001) * 100).applymap(lambda x: round(x, 2))
+# No requirements for sulfur available
+dfMrPV.drop('Schwefel',axis=1,inplace=True)
+print(dfMrPV)
+
+# Calculate the percentage coverage of the requirements for each nutrient (mineral) based on energy density (100 kcal)
+dfMrPE = dfMrEnergy.copy()
+dfMrPE.drop('grams',axis=1,inplace=True)
+dfMrPE.iloc[:, 1:] = (dfMrPE.iloc[:, 1:] / (dfMrRec.iloc[0] + 0.001) * 100).applymap(lambda x: round(x, 2))
+# No requirements for sulfur available
+dfMrPE.drop('Schwefel',axis=1,inplace=True)
+print(dfMrPE)
+
+# Calculate the percentage coverage of the requirements for each nutrient (tracemineral) based on energy density (100 kcal)
+dfTrMrPE = dfTrMrEnergy.copy()
+dfTrMrPE.drop('grams',axis=1,inplace=True)
+dfTrMrPE.iloc[:, 1:] = (dfTrMrPE.iloc[:, 1:] / (dfTrMrRec.iloc[0] + 0.001) * 100).applymap(lambda x: round(x, 2))
+print(dfTrMrPE)
+
+# Calculate the Score to which the need for minerals is covered in percentage
+# For each 100 grams of the food
+dfMrPV['average'] = dfMrPV.loc[:, 'Natrium':'Chlorid'].mean(axis=1)
+dfMrPVOrder = dfMrPV[['food', 'average']].sort_values('average', ascending=False)
+print(dfMrPVOrder)
+# For each 100 kcal of the food
+dfMrPE['average'] = dfMrPE.loc[:, 'Natrium':'Chlorid'].mean(axis=1)
+dfMrPEOrder = dfMrPE[['food', 'average']].sort_values('average', ascending=False)
+print(dfMrPEOrder)
+
+
+
 
 ########################################################################################################################
 # To see the results in Excel
