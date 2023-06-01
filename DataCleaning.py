@@ -3,14 +3,14 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 import os
-if 'path' in globals():
-    del path
-path = os.getcwd() + '/Multidimensional-Nutri-Score'
+if 'my_path' in globals():
+    del my_path
+my_path = os.getcwd() + '/Multidimensional-Nutri-Score'
 # + '/Multidimensional-Nutri-Score'
 
 
 # Table of uncleaned nutritional information
-dfNutrientsTable = pd.read_excel(path + '/NutrientsData.xlsx', sheet_name='Nutrients')
+dfNutrientsTable = pd.read_excel(my_path + '/NutrientsData.xlsx', sheet_name='Nutrients')
 dfNutrientsTable = dfNutrientsTable.drop(['Unnamed: 0'], axis=1)
 
 # Empty DataFrame with just the ID's and names and the calories of the foods
@@ -59,8 +59,8 @@ dfVitEnergy = pd.concat([dfEmpty[['food']],dfVitEnergy], axis=1)
 #print(dfVitEnergy)
 
 # Vitamin recommendations (filter the columns based on the selection of dfVitamins)
-dfVitRec_full = pd.read_excel(path + '/DGE_recommendations.xlsx', sheet_name='avg_vitamins')
-dfVitRec = dfVitRec_full.iloc[:1].copy()
+dfVitRec_full = pd.read_excel(my_path + '/DGE_recommendations.xlsx', sheet_name='avg_vitamins')
+dfVitRec = dfVitRec_full.iloc[1:2].copy()
 selected_columns = dfVitamins.columns.tolist()
 dfVitRec = dfVitRec.filter(items=selected_columns)
 #print(dfVitRec)
@@ -82,8 +82,8 @@ dfVitPV.columns = dfVitPV.columns.str.split().str[0]
 dfVitPE.columns = dfVitPE.columns.str.split().str[0]
 
 # Calculate the Score to which the need for vitamins is covered in percentage
-#dfVitPV = pd.read_excel(path + '\CleanedData.xlsx', sheet_name='VitaminCovVol').drop('Unnamed: 0', axis=1)
-#dfVitPE = pd.read_excel(path + '\CleanedData.xlsx', sheet_name='VitaminCovEnerg').drop('Unnamed: 0', axis=1)
+#dfVitPV = pd.read_excel(my_path + '\CleanedData.xlsx', sheet_name='VitaminCovVol').drop('Unnamed: 0', axis=1)
+#dfVitPE = pd.read_excel(my_path + '\CleanedData.xlsx', sheet_name='VitaminCovEnerg').drop('Unnamed: 0', axis=1)
 # For each 100 grams of the food
 dfVitPV['average'] = dfVitPV.loc[:, 'A':'K'].mean(axis=1)
 dfVitPVOrder = dfVitPV[['food', 'average']].sort_values('average', ascending=False)
@@ -109,9 +109,9 @@ dfTrMinerals = dfNutrientsTable.loc[:, 'Eisen':'Iodid']
 
 # Mineral recommendations (filter the columns based on the selection of dfMinerals and dfTrMinerals)
 # Note: The bioavailability of minerals is still neglected
-dfMrRec_full = pd.read_excel(path + '/DGE_recommendations.xlsx', sheet_name='avg_minerals')
+dfMrRec_full = pd.read_excel(my_path + '/DGE_recommendations.xlsx', sheet_name='avg_minerals')
 dfMrRec = dfMrRec_full.iloc[1:2].copy()
-dfTrMrRec_full = pd.read_excel(path + '/DGE_recommendations.xlsx', sheet_name='avg_trminerals')
+dfTrMrRec_full = pd.read_excel(my_path + '/DGE_recommendations.xlsx', sheet_name='avg_trminerals')
 dfTrMrRec = dfTrMrRec_full.iloc[1:2].copy()
 
 mr_columns = dfMinerals.columns.tolist()
@@ -119,7 +119,7 @@ dfMrRec = dfMrRec.filter(items=mr_columns).astype(float)
 trmr_columns = dfTrMinerals.columns.tolist()
 dfTrMrRec = dfTrMrRec.filter(items=trmr_columns)
 print(dfMrRec)
-#print(dfTrMrRec)
+print(dfTrMrRec)
 
 # Check if the values of the minerals and trace minerals are in the right units and convert them to float data types
 # Extract the digits from each value with a regular expression and just return a series of extracted values.
@@ -166,11 +166,17 @@ dfMrPE.iloc[:, 1:] = (dfMrPE.iloc[:, 1:] / (dfMrRec.iloc[0] + 0.001) * 100).appl
 dfMrPE.drop('Schwefel',axis=1,inplace=True)
 print(dfMrPE)
 
+# Calculate the percentage coverage of the requirements for each nutrient (tracemineral) based on food volume (100 grams)
+dfTrMrPV = dfTrMrVol.copy()
+dfTrMrPV.iloc[:, 2:] = (dfTrMrPV.iloc[:, 2:] / (dfTrMrRec.iloc[0] + 0.001) * 100).applymap(lambda x: round(x, 2))
+print(dfTrMrPV)
+
 # Calculate the percentage coverage of the requirements for each nutrient (tracemineral) based on energy density (100 kcal)
 dfTrMrPE = dfTrMrEnergy.copy()
 dfTrMrPE.drop('grams',axis=1,inplace=True)
 dfTrMrPE.iloc[:, 1:] = (dfTrMrPE.iloc[:, 1:] / (dfTrMrRec.iloc[0] + 0.001) * 100).applymap(lambda x: round(x, 2))
 print(dfTrMrPE)
+
 
 # Calculate the Score to which the need for minerals is covered in percentage
 # For each 100 grams of the food
@@ -182,16 +188,34 @@ dfMrPE['average'] = dfMrPE.loc[:, 'Natrium':'Chlorid'].mean(axis=1)
 dfMrPEOrder = dfMrPE[['food', 'average']].sort_values('average', ascending=False)
 print(dfMrPEOrder)
 
+# Calculate the Score to which the need for traceminerals is covered in percentage
+# For each 100 grams of the food
+dfTrMrPV['average'] = dfTrMrPV.loc[:,'Eisen':'Iodid'].mean(axis=1)
+dfTrMrPVOrder = dfTrMrPV[['food', 'average']].sort_values('average',ascending=False)
+print(dfTrMrPVOrder)
+# For each 100 kcal of the food
+dfTrMrPE['average'] = dfTrMrPE.loc[:,'Eisen':'Iodid'].mean(axis=1)
+dfTrMrPEOrder = dfTrMrPE[['food', 'average']].sort_values('average',ascending=False)
+print(dfTrMrPEOrder)
 
 
+# Calculate the full Score of nutrient coverage by energy(vitamins,minerals,trace minerals)
+dfNrCovPE = pd.concat([dfVitPE.loc[:, :'K'], dfMrPE.loc[:, 'Natrium':'Chlorid'], dfTrMrPE.loc[:, 'Eisen':'Iodid']], axis=1)
+dfNrCovPE['average'] = dfNrCovPE.loc[:,'A':].mean(axis=1)
+print(dfNrCovPE)
 
 ########################################################################################################################
-# To see the results in Excel
-dfVitamins = pd.concat([dfEmpty[['food']],dfVitamins], axis=1)
-with pd.ExcelWriter(path + '/CleanedData.xlsx') as writer:
-    dfVitamins.to_excel(writer, sheet_name='Vitamins')
-    dfVitPV.to_excel(writer, sheet_name='VitaminCovVol')
-    dfVitPE.to_excel(writer, sheet_name='VitaminCovEnerg')
+# To see the entire results in Excel
+with pd.ExcelWriter(my_path + '/Nutrient_coverage_by_volume.xlsx') as writer:
+    dfVitPV.to_excel(writer,sheet_name='Vitamins')
+    dfMrPV.to_excel(writer,sheet_name='Minerals')
+    dfTrMrPV.to_excel(writer,sheet_name='Traceminerals')
+
+with pd.ExcelWriter(my_path + '/Nutrient_coverage_by_energy.xlsx') as writer:
+    dfVitPE.to_excel(writer,sheet_name='Vitamins')
+    dfMrPE.to_excel(writer,sheet_name='Minerals')
+    dfTrMrPE.to_excel(writer,sheet_name='Traceminerals')
+    dfNrCovPE.to_excel(writer,sheet_name='Full_Score')
 
 ########################################################################################################################
 # Export to PostgreSQL

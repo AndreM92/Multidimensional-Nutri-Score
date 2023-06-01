@@ -108,3 +108,10 @@ print(dfVit2)
 # df['mean'] = df.iloc[:, 0:4].mean(axis=1)
 # df['mean'] = df.iloc[:, [0,1,2,3,4].mean(axis=1)
 # df["mean_odd_year"] = df.loc[:, ["Y1961","Y1963","Y1965"]].mean(axis = 1)
+
+
+dfVitamins = pd.concat([dfEmpty[['food']],dfVitamins], axis=1)
+with pd.ExcelWriter(my_path + '/CleanedData.xlsx') as writer:
+    dfVitamins.to_excel(writer, sheet_name='Vitamins')
+    dfVitPV.to_excel(writer, sheet_name='VitaminCovVol')
+    dfVitPE.to_excel(writer, sheet_name='VitaminCovEnerg')
